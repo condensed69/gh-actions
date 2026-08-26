@@ -27,10 +27,11 @@ Bitwarden item (needs `BW_SESSION`).
 
 1. Copy `stub/opencode.yml` to `.github/workflows/opencode.yml` in the target repo.
 2. Add the `OPENCODE_GO_API_KEY` secret.
-3. On **this** repo, enable cross-repo access: Settings → Actions → General →
-   Access → **Accessible from repositories owned by 'condensed69'** (one-time).
 
 ## Requirements
 
 - Target repos must have the `OPENCODE_GO_API_KEY` secret set.
-- This repo must allow access from `condensed69`-owned repos (see above).
+- This repo is **public** because GitHub only lets *public* repos call reusable
+  workflows from a *public* repository (private repos can call private or public
+  reusable workflows, but public repos can only call public ones). No secrets
+  live here — only the secret *name* is referenced.
