@@ -1,0 +1,29 @@
+name: opencode
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+concurrency:
+  group: opencode-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  opencode:
+    # Only same-repo collaborators (not bots, not forks) can trigger a review.
+    # The !bot guard stops the review's own comment from re-triggering the run.
+    if: |
+      !github.event.comment.user.bot &&
+      (github.event.comment.author_association == 'OWNER' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'COLLABORATOR') &&
+      (contains(github.event.comment.body, '/oc') ||
+       contains(github.event.comment.body, '/opencode'))
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    uses: condensed69/gh-actions/.github/workflows/oc-review.yml@main
+    secrets: inherit

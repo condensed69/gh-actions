@@ -1,0 +1,58 @@
+name: oc-review
+
+on:
+  workflow_call: {}
+
+jobs:
+  opencode:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Configure Git identity & auth
+        run: |
+          git config user.name "opencode[bot]"
+          git config user.email "opencode[bot]@users.noreply.github.com"
+          git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      # Install OpenCode directly instead of via the anomalyco/opencode action.
+      # That action's "Get opencode version" step does an UNAUTHENTICATED curl to
+      # api.github.com/repos/anomalyco/opencode/releases/latest, which trips the
+      # 60/hr/IP rate limit on shared runner IPs and kills the run before any
+      # model executes. Inlining removes that call.
+      - name: Install OpenCode
+        run: |
+          curl -fsSL https://opencode.ai/install | bash
+          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
+
+      - name: Run OpenCode (primary — Qwen 3.7 Plus)
+        id: opencode-primary
+        run: opencode github run
+        continue-on-error: true
+        timeout-minutes: 15
+        env:
+          MODEL: opencode-go/qwen3.7-plus
+          USE_GITHUB_TOKEN: "true"
+          SHARE: "false"
+          MENTIONS: "/opencode,/oc"
+          # models.dev registers opencode-go under OPENCODE_API_KEY (not
+          # OPENCODE_GO_API_KEY — the latter reads back as "Model not found").
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run OpenCode (fallback — Zen free)
+        if: steps.opencode-primary.outcome != 'success'
+        run: opencode github run
+        timeout-minutes: 15
+        env:
+          MODEL: opencode/hy3-free
+          USE_GITHUB_TOKEN: "true"
+          SHARE: "false"
+          MENTIONS: "/opencode,/oc"
+          # Zen's free tier needs no credential, so this catches a stale or
+          # rotated OPENCODE_GO_API_KEY without any secret.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
