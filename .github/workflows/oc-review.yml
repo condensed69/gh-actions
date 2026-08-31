@@ -19,10 +19,12 @@ jobs:
           persist-credentials: true
 
       - name: Configure Git identity & auth
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "opencode[bot]"
           git config user.email "opencode[bot]@users.noreply.github.com"
-          git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
       # Install OpenCode directly instead of via the anomalyco/opencode action.
       # That action's "Get opencode version" step does an UNAUTHENTICATED curl to
