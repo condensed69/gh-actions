@@ -7,7 +7,7 @@ set -euo pipefail
 #   add-oc-review.sh <owner/repo>
 #
 # The workflow is a thin stub that calls the shared reusable workflow in
-# condensed69/gh-actions, so future fixes propagate automatically.
+# condensed69/gh-actions, so future updates propagate automatically.
 #
 # The current review models are Zen free and need no API key. If
 # OPENCODE_GO_API_KEY is available, the script still sets it as a repo secret
