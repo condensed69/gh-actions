@@ -49,7 +49,10 @@ jobs:
         run: opencode github run
         timeout-minutes: 15
         env:
-          MODEL: opencode/hy3-free
+          # hy3-free was removed from the opencode catalog (2026-08-30:
+          # "Model not found" on PR 145's review run); muse-spark-
+          # 1.2-contributor-free is its replacement - 1M ctx, tool-calling.
+          MODEL: opencode/muse-spark-1.2-contributor-free
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
           MENTIONS: "/opencode,/oc"
