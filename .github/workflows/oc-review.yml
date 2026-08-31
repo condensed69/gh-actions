@@ -30,7 +30,7 @@ jobs:
       # That action's "Get opencode version" step does an UNAUTHENTICATED curl to
       # api.github.com/repos/anomalyco/opencode/releases/latest, which trips the
       # 60/hr/IP rate limit on shared runner IPs and kills the run before any
-      # model executes. Inlining removes that call.
+      # model executes. Here we do an AUTHENTICATED call (5000/hr limit) instead.
       - name: Get OpenCode latest version
         id: opencode-version
         env:
