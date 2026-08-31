@@ -19,10 +19,12 @@ jobs:
           persist-credentials: true
 
       - name: Configure Git identity & auth
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "opencode[bot]"
           git config user.email "opencode[bot]@users.noreply.github.com"
-          git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
       # Install OpenCode directly instead of via the anomalyco/opencode action.
       # That action's "Get opencode version" step does an UNAUTHENTICATED curl to
@@ -31,16 +33,25 @@ jobs:
       # model executes. Inlining removes that call.
       - name: Get OpenCode latest version
         id: opencode-version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION=$(curl -w "%{url_effective}" -I -L -s -S https://github.com/anomalyco/opencode/releases/latest -o /dev/null | grep -o '[^/]*$')
+          set -euo pipefail
+          VERSION=$(curl -sSf -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/anomalyco/opencode/releases/latest | jq -r .tag_name)
+          if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
+            echo "::error::Failed to resolve opencode version"
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Cache OpenCode
         id: cache-opencode
-        uses: actions/cache@v4
+        uses: actions/cache@v4.3.0
         with:
           path: ~/.opencode/bin
           key: ${{ runner.os }}-opencode-${{ steps.opencode-version.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-opencode-
 
       - name: Install OpenCode
         if: steps.cache-opencode.outputs.cache-hit != 'true'
