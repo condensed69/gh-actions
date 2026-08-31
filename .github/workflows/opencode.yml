@@ -6,9 +6,14 @@ on:
   pull_request_review_comment:
     types: [created]
 
+# Workflow-level concurrency is evaluated BEFORE the job `if`, so every
+# issue comment (Jules, bots, "lgtm") used to cancel an in-progress /oc
+# review. Group is per-repo + PR so reviews run in parallel across PRs
+# and repos. cancel-in-progress is only true for a real collaborator /oc
+# on that same PR — a second /oc replaces the first; Jules does not.
 concurrency:
-  group: opencode-${{ github.event.issue.number || github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ !github.event.comment.user.bot && (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'COLLABORATOR') && (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode')) }}
 
 jobs:
   opencode:
