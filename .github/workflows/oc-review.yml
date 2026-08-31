@@ -29,19 +29,18 @@ jobs:
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
 
-      - name: Run OpenCode (primary — Qwen 3.7 Plus)
+      - name: Run OpenCode (primary — Free)
         id: opencode-primary
         run: opencode github run
         continue-on-error: true
         timeout-minutes: 15
         env:
-          MODEL: opencode-go/qwen3.7-plus
+          MODEL: opencode/nemotron-3-ultra-free
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
           MENTIONS: "/opencode,/oc"
-          # models.dev registers opencode-go under OPENCODE_API_KEY (not
-          # OPENCODE_GO_API_KEY — the latter reads back as "Model not found").
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
+          # Zen's free tier needs no credential, so this catches a stale or
+          # rotated OPENCODE_GO_API_KEY without any secret.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run OpenCode (fallback — Zen free)
