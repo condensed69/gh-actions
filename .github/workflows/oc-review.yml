@@ -29,18 +29,23 @@ jobs:
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
 
-      - name: Run OpenCode (primary — Free)
+      - name: Run OpenCode (primary — Zen free)
         id: opencode-primary
         run: opencode github run
         continue-on-error: true
         timeout-minutes: 15
         env:
-          MODEL: opencode/nemotron-3-ultra-free
+          # Proven on stripper-dance run 497 (2026-08-31): posted a full
+          # review with no OpenCode Go quota. Do not use opencode-go/* while
+          # Go tokens are exhausted. Do not use nemotron-*-free: NVIDIA's
+          # trial endpoint 404s mid-stream after ~12 min
+          # ("Upstream request failed: [404] Provider returned error").
+          MODEL: opencode/muse-spark-1.2-contributor-free
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
           MENTIONS: "/opencode,/oc"
-          # Zen's free tier needs no credential, so this catches a stale or
-          # rotated OPENCODE_GO_API_KEY without any secret.
+          # Zen free models need no credential. Omitting OPENCODE_API_KEY
+          # keeps this path from spending Go or paid Zen credits.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run OpenCode (fallback — Zen free)
@@ -48,13 +53,12 @@ jobs:
         run: opencode github run
         timeout-minutes: 15
         env:
-          # hy3-free was removed from the opencode catalog (2026-08-30:
-          # "Model not found" on PR 145's review run); muse-spark-
-          # 1.2-contributor-free is its replacement - 1M ctx, tool-calling.
-          MODEL: opencode/muse-spark-1.2-contributor-free
+          # Different family from primary so a Spark outage does not take
+          # both steps. Official Zen free, tool-calling, 200k ctx. Do not
+          # use nemotron-*-free (NVIDIA 404) or hy3-free (catalog drop
+          # 2026-08-30, "Model not found" on PR 145).
+          MODEL: opencode/mimo-v2.5-free
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
           MENTIONS: "/opencode,/oc"
-          # Zen's free tier needs no credential, so this catches a stale or
-          # rotated OPENCODE_GO_API_KEY without any secret.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

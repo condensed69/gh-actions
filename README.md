@@ -9,9 +9,13 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
 `/opencode`).
 
 - **`oc-review.yml`** — the reusable workflow (`workflow_call`). Runs the review:
-  primary `opencode-go/qwen3.7-plus`, credential-free `opencode/hy3-free` fallback.
-  Single source of truth — fixes here propagate to every consumer on `@main`.
+  primary `opencode/muse-spark-1.2-contributor-free`, fallback
+  `opencode/mimo-v2.5-free`. Both are Zen **free** (no OpenCode Go quota, no
+  API key). Single source of truth — fixes here propagate to every consumer on `@main`.
 - **`stub/opencode.yml`** — the per-repo caller stub (triggers + guards + `secrets: inherit`).
+
+Do **not** point this workflow at `opencode-go/*` while Go tokens are exhausted.
+`nemotron-*-free` is also off-limits: NVIDIA's trial endpoint 404s mid-stream.
 
 ### Add it to a repo
 
@@ -19,19 +23,19 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
 ./add-oc-review.sh <owner/repo>
 ```
 
-The script writes the stub, sets the `OPENCODE_GO_API_KEY` secret, and opens a PR.
-It reads the key from `$OPENCODE_GO_API_KEY` or from the `AI API Keys (Homelab)`
-Bitwarden item (needs `BW_SESSION`).
+The script writes the stub and opens a PR. An `OPENCODE_GO_API_KEY` secret is
+optional (the current free models do not use it). If the env var or Bitwarden
+item is present, the script still sets the secret so a later paid-model swap
+does not need a second install pass.
 
 ### Manual install
 
 1. Copy `stub/opencode.yml` to `.github/workflows/opencode.yml` in the target repo.
-2. Add the `OPENCODE_GO_API_KEY` secret.
+2. No API-key secret is required for the current Zen-free models.
 
 ## Requirements
 
-- Target repos must have the `OPENCODE_GO_API_KEY` secret set.
 - This repo is **public** because GitHub only lets *public* repos call reusable
   workflows from a *public* repository (private repos can call private or public
   reusable workflows, but public repos can only call public ones). No secrets
-  live here — only the secret *name* is referenced.
+  live here — only the secret *name* is referenced, and only if a consumer sets it.

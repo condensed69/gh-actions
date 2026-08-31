@@ -7,8 +7,11 @@ set -euo pipefail
 #   add-oc-review.sh <owner/repo>
 #
 # The workflow is a thin stub that calls the shared reusable workflow in
-# condensed69/gh-actions, so future fixes propagate automatically. The script
-# also sets the OPENCODE_GO_API_KEY secret (required for the primary Qwen model).
+# condensed69/gh-actions, so future fixes propagate automatically.
+#
+# The current review models are Zen free and need no API key. If
+# OPENCODE_GO_API_KEY is available, the script still sets it as a repo secret
+# so a later paid-model swap does not need a second install pass.
 #
 # Requirements: gh (authenticated), git.
 #
@@ -28,7 +31,7 @@ for cmd in gh git; do
   command -v "$cmd" >/dev/null 2>&1 || { echo "error: '$cmd' is required" >&2; exit 1; }
 done
 
-# --- resolve OPENCODE_GO_API_KEY ---
+# --- resolve OPENCODE_GO_API_KEY (optional) ---
 if [[ -z "${OPENCODE_GO_API_KEY:-}" ]] && command -v bw >/dev/null 2>&1 && [[ -n "${BW_SESSION:-}" ]]; then
   if ! command -v jq >/dev/null 2>&1; then
     echo "error: 'jq' is required for the Bitwarden lookup" >&2
@@ -40,13 +43,7 @@ if [[ -z "${OPENCODE_GO_API_KEY:-}" ]] && command -v bw >/dev/null 2>&1 && [[ -n
 fi
 
 if [[ -z "${OPENCODE_GO_API_KEY:-}" ]]; then
-  cat >&2 <<'MSG'
-OPENCODE_GO_API_KEY is not set and could not be resolved from Bitwarden.
-Set it explicitly and retry, e.g.:
-    export OPENCODE_GO_API_KEY='sk-...'
-(The key lives in the "AI API Keys (Homelab)" Bitwarden item, field OPENCODE_ZEN_API_KEY.)
-MSG
-  exit 1
+  echo "note: OPENCODE_GO_API_KEY not set; skipping secret (Zen free models do not need it)"
 fi
 
 # --- fetch the stub from the shared repo (single source of truth) ---
@@ -70,8 +67,10 @@ git add .github/workflows/opencode.yml
 git commit -m "ci: add /oc OpenCode review workflow"
 git -c credential.helper='!gh auth git-credential' push -u origin "$BRANCH"
 
-printf '%s' "$OPENCODE_GO_API_KEY" | gh secret set OPENCODE_GO_API_KEY -R "$REPO"
+if [[ -n "${OPENCODE_GO_API_KEY:-}" ]]; then
+  printf '%s' "$OPENCODE_GO_API_KEY" | gh secret set OPENCODE_GO_API_KEY -R "$REPO"
+fi
 
 gh pr create -R "$REPO" --base main --head "$BRANCH" \
   --title "ci: add /oc OpenCode review workflow" \
-  --body "Adds the \`/oc\` review workflow (thin stub -> \`$WORKFLOW_REPO\` reusable workflow) and sets the \`OPENCODE_GO_API_KEY\` secret."
+  --body "Adds the \`/oc\` review workflow (thin stub -> \`$WORKFLOW_REPO\` reusable workflow). Zen free models; no API key required."
