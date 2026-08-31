@@ -48,7 +48,7 @@ jobs:
         id: cache-opencode
         uses: actions/cache@v4.3.0
         with:
-          path: ~/.opencode/bin
+          path: ~/.opencode
           key: ${{ runner.os }}-opencode-${{ steps.opencode-version.outputs.version }}
           restore-keys: |
             ${{ runner.os }}-opencode-
