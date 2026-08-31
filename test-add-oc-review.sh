@@ -73,7 +73,22 @@ assert_log_contains() {
     return 1
   fi
   if ! grep -qE "$pattern" "$LOG_DIR/$file"; then
-    echo "Expected log '$file' to contain '$pattern'"
+    echo "Expected log '$file' to contain regex '$pattern'"
+    echo "Contents of $file:"
+    cat "$LOG_DIR/$file"
+    return 1
+  fi
+}
+
+assert_log_contains_literal() {
+  local file="$1"
+  local text="$2"
+  if [ ! -f "$LOG_DIR/$file" ]; then
+    echo "Expected log '$file' does not exist."
+    return 1
+  fi
+  if ! grep -qF "$text" "$LOG_DIR/$file"; then
+    echo "Expected log '$file' to contain literal '$text'"
     echo "Contents of $file:"
     cat "$LOG_DIR/$file"
     return 1
@@ -109,7 +124,8 @@ isolate_path_for_missing() {
   # Allow fundamental tools to pass through
   for tool in bash echo cat grep mktemp rm ls mkdir printf chmod sed awk; do
     if [ "$tool" != "$tool_to_miss" ]; then
-      local tool_path="$(which "$tool" 2>/dev/null || true)"
+      local tool_path
+      tool_path="$(command -v "$tool" 2>/dev/null || true)"
       if [ -n "$tool_path" ]; then
         ln -s "$tool_path" "$TEMP_BIN/$tool"
       fi
@@ -124,7 +140,7 @@ isolate_path_for_missing() {
 
 test_missing_args() {
   assert_failure "$SCRIPT_TO_TEST"
-  assert_log_contains err "usage: add-oc-review.sh <owner/repo>"
+  assert_log_contains_literal err "usage: add-oc-review.sh <owner/repo>"
 }
 
 test_missing_gh() {
@@ -132,7 +148,7 @@ test_missing_gh() {
   isolate_path_for_missing "gh"
 
   assert_failure "$SCRIPT_TO_TEST" "owner/repo"
-  assert_log_contains err "error: 'gh' is required"
+  assert_log_contains_literal err "error: 'gh' is required"
 }
 
 test_missing_git() {
@@ -140,7 +156,7 @@ test_missing_git() {
   isolate_path_for_missing "git"
 
   assert_failure "$SCRIPT_TO_TEST" "owner/repo"
-  assert_log_contains err "error: 'git' is required"
+  assert_log_contains_literal err "error: 'git' is required"
 }
 
 test_gh_api_fetch_failure() {
@@ -152,7 +168,7 @@ test_gh_api_fetch_failure() {
   create_mock git ""
 
   assert_failure "$SCRIPT_TO_TEST" "owner/repo"
-  assert_log_contains err "error: could not fetch stub/opencode.yml from condensed69/gh-actions"
+  assert_log_contains_literal err "error: could not fetch stub/opencode.yml from condensed69/gh-actions"
 }
 
 test_bw_returns_null() {
@@ -178,8 +194,8 @@ test_bw_returns_null() {
   export BW_SESSION="test-session"
   assert_success "$SCRIPT_TO_TEST" "owner/repo"
 
-  assert_log_contains bw.log "get item AI API Keys \(Homelab\) --session test-session"
-  assert_log_contains out "note: OPENCODE_GO_API_KEY not set"
+  assert_log_contains_literal bw.log "get item AI API Keys (Homelab) --session test-session"
+  assert_log_contains_literal out "note: OPENCODE_GO_API_KEY not set"
 
   if [ -f "$LOG_DIR/gh.log" ] && grep -q "secret set" "$LOG_DIR/gh.log" 2>/dev/null; then
     echo "Expected no secret set call for null API key"
@@ -192,6 +208,9 @@ test_happy_path_no_api_key() {
     if [[ \"\$*\" == *\"api repos/condensed69/gh-actions/contents/stub/opencode.yml\"* ]]; then
       echo \"dummy-stub-content\"
     fi
+    if [[ \"\$*\" == *\"pr create\"* ]]; then
+      cat .github/workflows/opencode.yml > \"$LOG_DIR/stub_content_verification\"
+    fi
   "
   create_mock git "
     if [[ \"\$1\" == \"clone\" ]]; then
@@ -202,14 +221,14 @@ test_happy_path_no_api_key() {
 
   assert_success "$SCRIPT_TO_TEST" "owner/repo"
 
-  assert_log_contains out "note: OPENCODE_GO_API_KEY not set"
-  assert_log_contains gh.log "api repos/condensed69/gh-actions/contents/stub/opencode.yml"
-  assert_log_contains git.log "clone --quiet https://github.com/owner/repo.git"
-  assert_log_contains git.log "checkout -b chore/add-oc-review"
-  assert_log_contains git.log "add .github/workflows/opencode.yml"
-  assert_log_contains git.log "commit -m ci: add /oc OpenCode review workflow"
-  assert_log_contains git.log "push -u origin chore/add-oc-review"
-  assert_log_contains gh.log "pr create -R owner/repo"
+  assert_log_contains_literal out "note: OPENCODE_GO_API_KEY not set"
+  assert_log_contains_literal gh.log "api repos/condensed69/gh-actions/contents/stub/opencode.yml"
+  assert_log_contains_literal git.log "clone --quiet https://github.com/owner/repo.git"
+  assert_log_contains_literal git.log "checkout -b chore/add-oc-review"
+  assert_log_contains_literal git.log "add .github/workflows/opencode.yml"
+  assert_log_contains_literal git.log "commit -m ci: add /oc OpenCode review workflow"
+  assert_log_contains_literal git.log "push -u origin chore/add-oc-review"
+  assert_log_contains_literal gh.log "pr create -R owner/repo"
 
   # Ensure secret set is NOT called
   if [ -f "$LOG_DIR/gh.log" ] && grep -q "secret set" "$LOG_DIR/gh.log" 2>/dev/null; then
@@ -225,6 +244,18 @@ test_happy_path_no_api_key() {
   # So we CANNOT inspect it from here after `assert_success` finishes. The script cleans it up!
   # Let's verify the stub content by checking the gh api mock was called correctly, and that the file was added.
   assert_log_contains git.log "add .github/workflows/opencode.yml"
+
+  if [ ! -f "$LOG_DIR/stub_content_verification" ]; then
+    echo "Expected stub content to be dumped by gh pr create mock."
+    return 1
+  fi
+
+  local stub_content
+  stub_content="$(cat "$LOG_DIR/stub_content_verification")"
+  if [ "$stub_content" != "dummy-stub-content" ]; then
+    echo "Expected stub content 'dummy-stub-content', got: $stub_content"
+    return 1
+  fi
 }
 
 test_happy_path_with_env_api_key() {
@@ -246,8 +277,8 @@ test_happy_path_with_env_api_key() {
   export OPENCODE_GO_API_KEY="test-api-key-from-env"
   assert_success "$SCRIPT_TO_TEST" "owner/repo"
 
-  assert_log_contains gh.log "secret set OPENCODE_GO_API_KEY -R owner/repo"
-  assert_log_contains gh_stdin "test-api-key-from-env"
+  assert_log_contains_literal gh.log "secret set OPENCODE_GO_API_KEY -R owner/repo"
+  assert_log_contains_literal gh_stdin "test-api-key-from-env"
 }
 
 test_happy_path_with_bw_api_key() {
@@ -276,12 +307,12 @@ test_happy_path_with_bw_api_key() {
   export BW_SESSION="test-session"
   assert_success "$SCRIPT_TO_TEST" "owner/repo"
 
-  assert_log_contains bw.log "get item AI API Keys \(Homelab\) --session test-session"
+  assert_log_contains_literal bw.log "get item AI API Keys (Homelab) --session test-session"
   # Use exact match logic since the jq filter is hard to match strictly with basic regex
   assert_log_contains jq.log "fields.*OPENCODE_ZEN_API_KEY"
 
-  assert_log_contains gh.log "secret set OPENCODE_GO_API_KEY -R owner/repo"
-  assert_log_contains gh_stdin "test-api-key-from-bw"
+  assert_log_contains_literal gh.log "secret set OPENCODE_GO_API_KEY -R owner/repo"
+  assert_log_contains_literal gh_stdin "test-api-key-from-bw"
 }
 
 test_bw_no_jq() {
@@ -295,7 +326,7 @@ test_bw_no_jq() {
   export BW_SESSION="test-session"
 
   assert_failure "$SCRIPT_TO_TEST" "owner/repo"
-  assert_log_contains err "error: 'jq' is required for the Bitwarden lookup"
+  assert_log_contains_literal err "error: 'jq' is required for the Bitwarden lookup"
 }
 
 run_test missing_args
