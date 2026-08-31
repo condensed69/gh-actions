@@ -11,7 +11,7 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
 - **`oc-review.yml`** — the reusable workflow (`workflow_call`). Runs the review:
   primary `opencode/muse-spark-1.2-contributor-free`, fallback
   `opencode/mimo-v2.5-free`. Both are Zen **free** (no OpenCode Go quota, no
-  API key). Single source of truth — fixes here propagate to every consumer on `@main`.
+  API key). Single source of truth — updates here propagate to every consumer on `@main`.
 - **`stub/opencode.yml`** — the per-repo caller stub (triggers + guards + `secrets: inherit`).
 
 Do **not** point this workflow at `opencode-go/*` while Go tokens are exhausted.
