@@ -71,7 +71,7 @@ jobs:
           # Go tokens are exhausted. Do not use nemotron-*-free: NVIDIA's
           # trial endpoint 404s mid-stream after ~12 min
           # ("Upstream request failed: [404] Provider returned error").
-          MODEL: opencode/muse-spark-1.3-contributor-free
+          MODEL: opencode/big-pickle
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
           # conversation. "/oc <text>" and inline code-line comments are unchanged.
@@ -92,7 +92,7 @@ jobs:
           # both steps. Official Zen free, tool-calling, 200k ctx. Do not
           # use nemotron-*-free (NVIDIA 404) or hy3-free (catalog drop
           # 2026-08-30, "Model not found" on PR 145).
-          MODEL: opencode/big-pickle
+          MODEL: opencode/muse-spark-1.3-contributor-free
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
           # conversation. "/oc <text>" and inline code-line comments are unchanged.
