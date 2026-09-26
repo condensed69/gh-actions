@@ -12,7 +12,7 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
   primary `opencode/big-pickle`, fallback
   `opencode/muse-spark-1.3-contributor-free`. Both are Zen **free** (no OpenCode Go quota, no
   API key). Single source of truth — updates here propagate to every consumer on `@main`.
-  A bare `/oc` (surrounding whitespace and case ignored) is a review-only run:
+  A bare `/oc` (ignoring whitespace, case and a trailing Claude Code footer) is a review-only run:
   untracked files are ignored for that run, so scratch files the model leaves
   behind can't be pushed to the PR, and the prompt tells it not to edit or
   commit anything. A tracked-file edit or a commit the model makes itself is
