@@ -68,10 +68,32 @@ jobs:
       # "Approve PR #110"). For a bare /oc review, ignore every untracked file
       # so the tree stays clean and nothing is committed. Set before opencode
       # checks out the PR branch; exclude rules don't affect that checkout.
+      # This stops uncommitted scratch files only: an edit to a tracked file,
+      # or a commit the model makes itself, is still pushed. The review
+      # prompt below is what guards those, and it also survives opencode
+      # changing how it stages (e.g. to `git add -f`).
       # "/oc <instruction>" runs are untouched: those may commit on purpose.
-      - name: Keep review runs from committing scratch files
-        if: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.comment.body == '/oc' || github.event.comment.body == '/opencode') }}
-        run: echo '*' >> .git/info/exclude
+      #
+      # This step is the one place that decides "bare /oc review". The
+      # exclude and both PROMPTs read its output, so they can't drift apart
+      # into "review prompt but free to commit". The body is trimmed and
+      # lowercased first: the caller's trigger uses contains(), which is
+      # case-insensitive, so "/oc\n" and "/OC" start a run too.
+      - name: Detect a bare /oc review
+        id: mode
+        env:
+          IS_PR_COMMENT: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request && 'true' || 'false' }}
+          BODY: ${{ github.event.comment.body }}
+        run: |
+          cmd="${BODY#"${BODY%%[![:space:]]*}"}"
+          cmd="${cmd%"${cmd##*[![:space:]]}"}"
+          cmd="${cmd,,}"
+          review=false
+          if [[ "$IS_PR_COMMENT" == true && ( "$cmd" == /oc || "$cmd" == /opencode ) ]]; then
+            review=true
+            echo '*' >> .git/info/exclude
+          fi
+          echo "review=$review" >> "$GITHUB_OUTPUT"
 
       - name: Run OpenCode (primary — Zen free)
         id: opencode-primary
@@ -87,14 +109,21 @@ jobs:
           MODEL: opencode/big-pickle
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
-          # conversation. "/oc <text>" and inline code-line comments are unchanged.
-          PROMPT: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.comment.body == '/oc' || github.event.comment.body == '/opencode') && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit or delete any files in the repository; put any scratch scripts or notes under /tmp.' || '' }}
+          # conversation (steps.mode). "/oc <text>" and inline code-line
+          # comments are unchanged.
+          PROMPT: ${{ steps.mode.outputs.review == 'true' && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit, delete or commit any files in the repository; put any scratch scripts or notes under /tmp.' || '' }}
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
           MENTIONS: "/opencode,/oc"
           # Zen free models need no credential. Omitting OPENCODE_API_KEY
           # keeps this path from spending Go or paid Zen credits.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # A failed primary review can leave a tracked-file edit behind, which
+      # the fallback would then commit and push. Reset it for review runs.
+      - name: Discard the primary review's edits
+        if: steps.opencode-primary.outcome != 'success' && steps.mode.outputs.review == 'true'
+        run: git reset -q --hard
 
       - name: Run OpenCode (fallback — Zen free)
         if: steps.opencode-primary.outcome != 'success'
@@ -108,8 +137,9 @@ jobs:
           MODEL: opencode/muse-spark-1.3-contributor-free
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
-          # conversation. "/oc <text>" and inline code-line comments are unchanged.
-          PROMPT: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.comment.body == '/oc' || github.event.comment.body == '/opencode') && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit or delete any files in the repository; put any scratch scripts or notes under /tmp.' || '' }}
+          # conversation (steps.mode). "/oc <text>" and inline code-line
+          # comments are unchanged.
+          PROMPT: ${{ steps.mode.outputs.review == 'true' && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit, delete or commit any files in the repository; put any scratch scripts or notes under /tmp.' || '' }}
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
           MENTIONS: "/opencode,/oc"
