@@ -96,7 +96,7 @@ jobs:
           review=false
           if [[ "$IS_PR_COMMENT" == true && ( "$cmd" == /oc || "$cmd" == /opencode ) ]]; then
             review=true
-            echo '*' >> .git/info/exclude
+            printf '\n*\n' >> .git/info/exclude
           fi
           echo "review=$review" >> "$GITHUB_OUTPUT"
 
