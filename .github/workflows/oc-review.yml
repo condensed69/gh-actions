@@ -60,6 +60,19 @@ jobs:
       - name: Add OpenCode to PATH
         run: echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
 
+      # `opencode github run` checks `git status --porcelain` after the model
+      # finishes and, if anything shows, runs `git add .`, commits and pushes
+      # to the PR branch -- and only then posts its comment. A review must
+      # never change the branch, but the model can leave scratch files behind
+      # (condensed69/mom-site#110 got probe5.mjs/probe6.mjs committed as
+      # "Approve PR #110"). For a bare /oc review, ignore every untracked file
+      # so the tree stays clean and nothing is committed. Set before opencode
+      # checks out the PR branch; exclude rules don't affect that checkout.
+      # "/oc <instruction>" runs are untouched: those may commit on purpose.
+      - name: Keep review runs from committing scratch files
+        if: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.comment.body == '/oc' || github.event.comment.body == '/opencode') }}
+        run: echo '*' >> .git/info/exclude
+
       - name: Run OpenCode (primary — Zen free)
         id: opencode-primary
         run: opencode github run
@@ -75,7 +88,7 @@ jobs:
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
           # conversation. "/oc <text>" and inline code-line comments are unchanged.
-          PROMPT: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.comment.body == '/oc' || github.event.comment.body == '/opencode') && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding.' || '' }}
+          PROMPT: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.comment.body == '/oc' || github.event.comment.body == '/opencode') && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit or delete any files in the repository; put any scratch scripts or notes under /tmp.' || '' }}
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
           MENTIONS: "/opencode,/oc"
@@ -96,7 +109,7 @@ jobs:
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
           # conversation. "/oc <text>" and inline code-line comments are unchanged.
-          PROMPT: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.comment.body == '/oc' || github.event.comment.body == '/opencode') && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding.' || '' }}
+          PROMPT: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.comment.body == '/oc' || github.event.comment.body == '/opencode') && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit or delete any files in the repository; put any scratch scripts or notes under /tmp.' || '' }}
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
           MENTIONS: "/opencode,/oc"

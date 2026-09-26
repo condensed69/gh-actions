@@ -9,9 +9,12 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
 `/opencode`).
 
 - **`oc-review.yml`** — the reusable workflow (`workflow_call`). Runs the review:
-  primary `opencode/muse-spark-1.2-contributor-free`, fallback
-  `opencode/mimo-v2.5-free`. Both are Zen **free** (no OpenCode Go quota, no
+  primary `opencode/big-pickle`, fallback
+  `opencode/muse-spark-1.3-contributor-free`. Both are Zen **free** (no OpenCode Go quota, no
   API key). Single source of truth — updates here propagate to every consumer on `@main`.
+  A bare `/oc` is a review and never commits: untracked files are ignored for
+  that run, so scratch files the model leaves behind can't be pushed to the PR.
+  `/oc <instruction>` can still commit changes it was asked to make.
 - **`stub/opencode.yml`** — the per-repo caller stub (triggers + guards + `secrets: inherit`).
 
 Do **not** point this workflow at `opencode-go/*` while Go tokens are exhausted.
