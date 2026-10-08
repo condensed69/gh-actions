@@ -121,6 +121,11 @@ jobs:
           PROMPT: ${{ steps.mode.outputs.review == 'true' && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit, delete or commit any files in the repository; put any scratch scripts or notes under /tmp.' || '' }}
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
+          # The review PROMPT sends scratch files to /tmp, which is outside the
+          # repo. OpenCode asks before touching it, nobody can answer in CI, and
+          # `opencode github run` then waits until the timeout (Scent-Smart#22,
+          # 2026-10-08: both steps froze on /tmp/* for 30 min each). Allow it.
+          OPENCODE_CONFIG_CONTENT: '{"permission":{"external_directory":{"/tmp/**":"allow"}}}'
           MENTIONS: "/opencode,/oc"
           # Zen free models need no credential. Omitting OPENCODE_API_KEY
           # keeps this path from spending Go or paid Zen credits.
@@ -152,5 +157,7 @@ jobs:
           PROMPT: ${{ steps.mode.outputs.review == 'true' && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit, delete or commit any files in the repository; put any scratch scripts or notes under /tmp.' || '' }}
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
+          # Same /tmp allowance as the primary step; see the note there.
+          OPENCODE_CONFIG_CONTENT: '{"permission":{"external_directory":{"/tmp/**":"allow"}}}'
           MENTIONS: "/opencode,/oc"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
