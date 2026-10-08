@@ -104,7 +104,9 @@ jobs:
         id: opencode-primary
         run: opencode github run
         continue-on-error: true
-        timeout-minutes: 15
+        # big-pickle hit the old 15 min cap on Scent-Smart#19 (2026-10-08) and its
+        # partial work was thrown away: the fallback starts over from scratch.
+        timeout-minutes: 30
         env:
           # Proven on stripper-dance run 497 (2026-08-31): posted a full
           # review with no OpenCode Go quota. Do not use opencode-go/* while
@@ -133,7 +135,10 @@ jobs:
       - name: Run OpenCode (fallback — Zen free)
         if: steps.opencode-primary.outcome != 'success'
         run: opencode github run
-        timeout-minutes: 15
+        # 30, not 15, on purpose: on a Scent-Smart Aikido PR (2026-10-08) both
+        # steps hit the 15 min cap and the run failed with no review. Keep it
+        # equal to the primary's limit; this step starts a fresh review.
+        timeout-minutes: 30
         env:
           # Different family from primary so a Spark outage does not take
           # both steps. Official Zen free, tool-calling, 200k ctx. Do not
