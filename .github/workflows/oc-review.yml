@@ -104,16 +104,18 @@ jobs:
         id: opencode-primary
         run: opencode github run
         continue-on-error: true
-        # big-pickle hit the old 15 min cap on Scent-Smart#19 (2026-10-08) and its
-        # partial work was thrown away: the fallback starts over from scratch.
-        timeout-minutes: 30
+        # muse-spark finishes a review in 1-2 min, so 15 min is ample; a stall
+        # then costs 15 min instead of 30 before the fallback starts.
+        timeout-minutes: 15
         env:
-          # Proven on stripper-dance run 497 (2026-08-31): posted a full
-          # review with no OpenCode Go quota. Do not use opencode-go/* while
-          # Go tokens are exhausted. Do not use nemotron-*-free: NVIDIA's
-          # trial endpoint 404s mid-stream after ~12 min
-          # ("Upstream request failed: [404] Provider returned error").
-          MODEL: opencode/big-pickle
+          # muse-spark first since 2026-10-09: it posted full reviews in 42 s,
+          # 1 min and 2 min on Scent-Smart, while big-pickle took 4-15 min and
+          # its free endpoint stalled on 2 of 4 runs (Scent-Smart#22: four
+          # "ProviderHeaderTimeoutError ... 300000ms" in a row, 30 min lost).
+          # Official Zen free, tool-calling, 200k ctx. Do not use
+          # nemotron-*-free (NVIDIA 404) or hy3-free (catalog drop
+          # 2026-08-30, "Model not found" on PR 145).
+          MODEL: opencode/muse-spark-1.3-contributor-free
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
           # conversation (steps.mode). "/oc <text>" and inline code-line
@@ -140,16 +142,15 @@ jobs:
       - name: Run OpenCode (fallback — Zen free)
         if: steps.opencode-primary.outcome != 'success'
         run: opencode github run
-        # 30, not 15, on purpose: on a Scent-Smart Aikido PR (2026-10-08) both
-        # steps hit the 15 min cap and the run failed with no review. Keep it
-        # equal to the primary's limit; this step starts a fresh review.
+        # big-pickle is slower (4-15 min per review) and this step starts a
+        # fresh review, so it keeps the longer limit.
         timeout-minutes: 30
         env:
           # Different family from primary so a Spark outage does not take
-          # both steps. Official Zen free, tool-calling, 200k ctx. Do not
-          # use nemotron-*-free (NVIDIA 404) or hy3-free (catalog drop
-          # 2026-08-30, "Model not found" on PR 145).
-          MODEL: opencode/muse-spark-1.3-contributor-free
+          # both steps. Proven on stripper-dance run 497 (2026-08-31): posted
+          # a full review with no OpenCode Go quota. Do not use opencode-go/*
+          # while Go tokens are exhausted.
+          MODEL: opencode/big-pickle
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
           # conversation (steps.mode). "/oc <text>" and inline code-line
