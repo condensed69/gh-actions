@@ -9,8 +9,9 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
 `/opencode`).
 
 - **`oc-review.yml`** — the reusable workflow (`workflow_call`). Runs the review:
-  primary `opencode/big-pickle`, fallback
-  `opencode/muse-spark-1.3-contributor-free`. Both are Zen **free** (no OpenCode Go quota, no
+  primary `opencode/muse-spark-1.3-contributor-free` (15 min limit), fallback
+  `opencode/big-pickle` (20 min limit), so a run with no review ends within 35 min.
+  Both are Zen **free** (no OpenCode Go quota, no
   API key). Single source of truth — updates here propagate to every consumer on `@main`.
   A bare `/oc` (ignoring whitespace, case and a trailing Claude Code footer) is a review-only run:
   untracked files are ignored for that run, so scratch files the model leaves

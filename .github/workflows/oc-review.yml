@@ -142,12 +142,15 @@ jobs:
       - name: Run OpenCode (fallback — Zen free)
         if: steps.opencode-primary.outcome != 'success'
         run: opencode github run
-        # big-pickle is slower (4-15 min per review) and this step starts a
-        # fresh review, so it keeps the longer limit.
-        timeout-minutes: 30
+        # big-pickle needs 4-15 min for a healthy review and this step starts
+        # a fresh one. 20, not 30: when its endpoint stalls, each retry waits
+        # 5 min for headers, so extra minutes only delay the failure.
+        timeout-minutes: 20
         env:
-          # Different family from primary so a Spark outage does not take
-          # both steps. Proven on stripper-dance run 497 (2026-08-31): posted
+          # A different upstream model from the primary. Both go through the
+          # same Zen gateway, so this covers a model outage, not a gateway
+          # outage: on Scent-Smart#22 (run 37950419162) big-pickle stalled
+          # while Zen served muse-spark normally minutes later. Proven on stripper-dance run 497 (2026-08-31): posted
           # a full review with no OpenCode Go quota. Do not use opencode-go/*
           # while Go tokens are exhausted.
           MODEL: opencode/big-pickle
