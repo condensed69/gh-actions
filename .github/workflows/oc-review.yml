@@ -1,4 +1,4 @@
-: oc-review
+name: oc-review
 
 on:
   workflow_call: {}
