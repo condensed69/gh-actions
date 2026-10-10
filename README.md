@@ -21,20 +21,12 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
   `/oc <instruction>` can still commit changes it was asked to make.
 - **`stub/opencode.yml`** — the per-repo caller stub (triggers + guards + `secrets: inherit`).
 
-Callers may override only their own primary reviewer without changing the
-fleet-wide default. Scent-Smart's MiniMax trial uses:
-
-```yaml
-with:
-  primary_model: minimax-plan/MiniMax-M3.1-Flash-Preview
-  primary_timeout_minutes: 25
-secrets: inherit
-```
-
-That opt-in requires a `MINIMAX_API_KEY` Actions secret in the calling repo.
-The shared workflow declares the `minimax-plan` provider inline because CI has
-no user OpenCode configuration. A failed primary still falls back to
-`opencode/big-pickle`.
+Scent-Smart alone is selected by `github.repository` for a MiniMax M3.1 Flash
+Preview trial with a 25-minute window. Every other consumer keeps the default
+LongCat primary. The trial requires a `MINIMAX_API_KEY` Actions secret in
+Scent-Smart; the shared workflow declares the `minimax-plan` provider inline
+because CI has no user OpenCode configuration. A failed primary still falls
+back to `opencode/big-pickle`.
 
 Do **not** point this workflow at `opencode-go/*` while Go tokens are exhausted.
 `nemotron-*-free` is also off-limits: NVIDIA's trial endpoint 404s mid-stream.
