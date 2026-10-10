@@ -1,4 +1,4 @@
-I'llname: oc-review
+: oc-review
 
 on:
   workflow_call: {}
