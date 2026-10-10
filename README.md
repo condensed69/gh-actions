@@ -9,7 +9,7 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
 `/opencode`).
 
 - **`oc-review.yml`** — the reusable workflow (`workflow_call`). Runs the review:
-  primary `opencode/muse-spark-1.3-contributor-free` (15 min limit), fallback
+  default primary `opencode/longcat-2.5-preview-free` (15 min limit), fallback
   `opencode/big-pickle` (20 min limit), so a run with no review ends within 35 min.
   Both are Zen **free** (no OpenCode Go quota, no
   API key). Single source of truth — updates here propagate to every consumer on `@main`.
@@ -20,6 +20,21 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
   held back only by that prompt.
   `/oc <instruction>` can still commit changes it was asked to make.
 - **`stub/opencode.yml`** — the per-repo caller stub (triggers + guards + `secrets: inherit`).
+
+Callers may override only their own primary reviewer without changing the
+fleet-wide default. Scent-Smart's MiniMax trial uses:
+
+```yaml
+with:
+  primary_model: minimax-plan/MiniMax-M3.1-Flash-Preview
+  primary_timeout_minutes: 25
+secrets: inherit
+```
+
+That opt-in requires a `MINIMAX_API_KEY` Actions secret in the calling repo.
+The shared workflow declares the `minimax-plan` provider inline because CI has
+no user OpenCode configuration. A failed primary still falls back to
+`opencode/big-pickle`.
 
 Do **not** point this workflow at `opencode-go/*` while Go tokens are exhausted.
 `nemotron-*-free` is also off-limits: NVIDIA's trial endpoint 404s mid-stream.

@@ -149,6 +149,17 @@ test_shared_workflow_contract() {
     echo "Caller target does not declare workflow_call: $workflow"
     return 1
   fi
+  for contract in \
+    'default: opencode/longcat-2.5-preview-free' \
+    'default: 15' \
+    'MODEL: ${{ inputs.primary_model }}' \
+    'MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}' \
+    'MiniMax-M3.1-Flash-Preview'; do
+    if ! grep -qF "$contract" "$SCRIPT_DIR/$workflow"; then
+      echo "Reusable workflow is missing caller-specific reviewer contract: $contract"
+      return 1
+    fi
+  done
 }
 
 test_missing_args() {
