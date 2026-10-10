@@ -138,6 +138,19 @@ isolate_path_for_missing() {
 
 # --- Tests ---
 
+test_shared_workflow_contract() {
+  local workflow
+  workflow="$(sed -n 's|.*uses: condensed69/gh-actions/\([^@ ]*\)@main.*|\1|p' "$SCRIPT_DIR/stub/opencode.yml")"
+  if [[ -z "$workflow" || ! -f "$SCRIPT_DIR/$workflow" ]]; then
+    echo "Caller stub references a missing reusable workflow: $workflow"
+    return 1
+  fi
+  if ! grep -qE '^[[:space:]]+workflow_call:' "$SCRIPT_DIR/$workflow"; then
+    echo "Caller target does not declare workflow_call: $workflow"
+    return 1
+  fi
+}
+
 test_missing_args() {
   assert_failure "$SCRIPT_TO_TEST"
   assert_log_contains_literal err "usage: add-oc-review.sh <owner/repo>"
@@ -329,6 +342,7 @@ test_bw_no_jq() {
   assert_log_contains_literal err "error: 'jq' is required for the Bitwarden lookup"
 }
 
+run_test shared_workflow_contract
 run_test missing_args
 run_test missing_gh
 run_test missing_git
