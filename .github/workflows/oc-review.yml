@@ -100,21 +100,26 @@ jobs:
           fi
           echo "review=$review" >> "$GITHUB_OUTPUT"
 
-      - name: Run OpenCode (primary — Zen free)
+      - name: Run OpenCode (primary — OpenRouter free)
         id: opencode-primary
         run: opencode github run
         continue-on-error: true
-        # space-bunny is the primary since 2026-10-10; muse-spark moves to the
-        # fallback slot because it was fast but missed too many findings.
-        # space-bunny is unproven here and slower, so the window is 25 min; a
-        # stall then costs 25 min instead of 15 before the fallback starts.
+        # nano-omni is the primary since 2026-10-10; it beat space-bunny in the
+        # live smoke probes (1s "Say OK", reasoning-capable, tools). It runs on
+        # the OpenRouter free tier (needs OPENROUTER_API_KEY) rather than the
+        # Zen gateway, so this step does require a key where the old Zen primaries
+        # did not. space-bunny keeps the fallback slot because it was slower and
+        # unproven here; muse-spark covered too little.
         timeout-minutes: 25
         env:
-          # space-bunny primary. Official Zen free, tool-calling, 1M ctx
-          # (512k output), which suits large diffs. Do not use nemotron-*-free
-          # (NVIDIA 404) or hy3-free (catalog drop 2026-08-30, "Model not
-          # found" on PR 145).
-          MODEL: opencode/space-bunny-free
+          # nano-omni primary. OpenRouter free, reasoning, tool-calling, 30B-a3b.
+          # Do not use nemotron-*-free (NVIDIA 404) or hy3-free (catalog drop
+          # 2026-08-30, "Model not found" on PR 145). nano-omni is the single
+          # exception that works on OpenRouter as of 2026-10-10.
+          MODEL: openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+          # The OpenRouter key comes from the calling repository's secrets
+          # (oc-review.yml is a shared reusable workflow).
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
           # conversation (steps.mode). "/oc <text>" and inline code-line
@@ -128,8 +133,8 @@ jobs:
           # 2026-10-08: both steps froze on /tmp/* for 30 min each). Allow it.
           OPENCODE_CONFIG_CONTENT: '{"permission":{"external_directory":{"/tmp/**":"allow"}}}'
           MENTIONS: "/opencode,/oc"
-          # Zen free models need no credential. Omitting OPENCODE_API_KEY
-          # keeps this path from spending Go or paid Zen credits.
+          # OpenRouter free models still need a key; omitting OPENCODE_API_KEY
+          # keeps this path off Go or paid Zen credits.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # A failed primary review can leave a tracked-file edit behind, which
