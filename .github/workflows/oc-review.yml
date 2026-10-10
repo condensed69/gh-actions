@@ -1,4 +1,4 @@
-name: oc-review
+I'llname: oc-review
 
 on:
   workflow_call: {}
@@ -115,7 +115,7 @@ jobs:
           # Official Zen free, tool-calling, 200k ctx. Do not use
           # nemotron-*-free (NVIDIA 404) or hy3-free (catalog drop
           # 2026-08-30, "Model not found" on PR 145).
-          MODEL: opencode/muse-spark-1.3-contributor-free
+          MODEL: opencode/longcat-2.5-preview-free
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
           # conversation (steps.mode). "/oc <text>" and inline code-line
