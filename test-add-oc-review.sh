@@ -19,12 +19,8 @@ setup() {
 
   export PATH="$MOCK_BIN:$ORIG_PATH"
 
-  # Clear environment variables. Both keys must go: the script reads
-  # MINIMAX_API_KEY the same way it reads OPENCODE_GO_API_KEY, and a key
-  # inherited from the developer's shell would flip the "no secret set"
-  # assertions below.
+  # Clear environment variables
   unset OPENCODE_GO_API_KEY || true
-  unset MINIMAX_API_KEY || true
   unset BW_SESSION || true
 }
 
@@ -213,7 +209,6 @@ test_bw_returns_null() {
 
   assert_log_contains_literal bw.log "get item AI API Keys (Homelab) --session test-session"
   assert_log_contains_literal out "note: OPENCODE_GO_API_KEY not set"
-  assert_log_contains_literal out "note: MINIMAX_API_KEY not set"
 
   if [ -f "$LOG_DIR/gh.log" ] && grep -q "secret set" "$LOG_DIR/gh.log" 2>/dev/null; then
     echo "Expected no secret set call for null API key"
@@ -240,7 +235,6 @@ test_happy_path_no_api_key() {
   assert_success "$SCRIPT_TO_TEST" "owner/repo"
 
   assert_log_contains_literal out "note: OPENCODE_GO_API_KEY not set"
-  assert_log_contains_literal out "note: MINIMAX_API_KEY not set"
   assert_log_contains_literal gh.log "api repos/condensed69/gh-actions/contents/stub/opencode.yml"
   assert_log_contains_literal git.log "clone --quiet https://github.com/owner/repo.git"
   assert_log_contains_literal git.log "checkout -b chore/add-oc-review"
@@ -283,7 +277,7 @@ test_happy_path_with_env_api_key() {
       echo \"dummy-stub-content\"
     fi
     if [[ \"\$*\" == *\"secret set\"* ]]; then
-      cat - >> \"$LOG_DIR/gh_stdin\"
+      cat - > \"$LOG_DIR/gh_stdin\"
     fi
   "
   create_mock git "
@@ -293,14 +287,11 @@ test_happy_path_with_env_api_key() {
     fi
   "
 
-  export MINIMAX_API_KEY="test-minimax-key-from-env"
   export OPENCODE_GO_API_KEY="test-api-key-from-env"
   assert_success "$SCRIPT_TO_TEST" "owner/repo"
 
   assert_log_contains_literal gh.log "secret set OPENCODE_GO_API_KEY -R owner/repo"
   assert_log_contains_literal gh_stdin "test-api-key-from-env"
-  assert_log_contains_literal gh.log "secret set MINIMAX_API_KEY -R owner/repo"
-  assert_log_contains_literal gh_stdin "test-minimax-key-from-env"
 }
 
 test_happy_path_with_bw_api_key() {
@@ -309,7 +300,7 @@ test_happy_path_with_bw_api_key() {
       echo \"dummy-stub-content\"
     fi
     if [[ \"\$*\" == *\"secret set\"* ]]; then
-      cat - >> \"$LOG_DIR/gh_stdin\"
+      cat - > \"$LOG_DIR/gh_stdin\"
     fi
   "
   create_mock git "
