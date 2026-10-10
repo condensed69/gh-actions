@@ -9,10 +9,15 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
 `/opencode`).
 
 - **`oc-review.yml`** — the reusable workflow (`workflow_call`). Runs the review:
-  primary `opencode/muse-spark-1.3-contributor-free` (15 min limit), fallback
-  `opencode/big-pickle` (20 min limit), so a run with no review ends within 35 min.
-  Both are Zen **free** (no OpenCode Go quota, no
-  API key). Single source of truth — updates here propagate to every consumer on `@main`.
+  primary `minimax-plan/MiniMax-M3.1-Flash-Preview` (25 min limit), fallback
+  `opencode/muse-spark-1.3-contributor-free` (10 min limit), so a run with no
+  review ends within 35 min.
+  The primary is **not** a stock OpenCode provider — `minimax-plan` is declared
+  inline in `OPENCODE_CONFIG_CONTENT` against MiniMax's Anthropic-compatible
+  endpoint, and it needs a `MINIMAX_API_KEY` secret in the calling repo. Without
+  that secret the primary fails and the Zen free fallback answers, so a repo
+  installed without it still gets reviews.
+  Single source of truth — updates here propagate to every consumer on `@main`.
   A bare `/oc` (ignoring whitespace, case and a trailing Claude Code footer) is a review-only run:
   untracked files are ignored for that run, so scratch files the model leaves
   behind can't be pushed to the PR, and the prompt tells it not to edit or
@@ -30,15 +35,17 @@ Do **not** point this workflow at `opencode-go/*` while Go tokens are exhausted.
 ./add-oc-review.sh <owner/repo>
 ```
 
-The script writes the stub and opens a PR. An `OPENCODE_GO_API_KEY` secret is
-optional (the current free models do not use it). If the env var or Bitwarden
-item is present, the script still sets the secret so a later paid-model swap
-does not need a second install pass.
+The script writes the stub and opens a PR. `MINIMAX_API_KEY` (primary reviewer)
+and `OPENCODE_GO_API_KEY` (unused today, kept for a later paid-model swap) are
+both optional secrets it sets when the key is available in the environment or in
+the Bitwarden item. Without `MINIMAX_API_KEY` the repo still reviews, on the
+free fallback model.
 
 ### Manual install
 
 1. Copy `stub/opencode.yml` to `.github/workflows/opencode.yml` in the target repo.
-2. No API-key secret is required for the current Zen-free models.
+2. Add a `MINIMAX_API_KEY` repo secret for the primary reviewer (optional; the
+   free fallback answers without it).
 
 ## Requirements
 
