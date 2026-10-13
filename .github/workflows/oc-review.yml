@@ -4,7 +4,7 @@ on:
   workflow_call:
     secrets:
       MINIMAX_API_KEY:
-        description: Required only for the Scent-Smart MiniMax trial
+        description: Required for repositories using the MiniMax review lane
         required: false
 
 jobs:
@@ -108,13 +108,13 @@ jobs:
         id: opencode-primary
         run: opencode github run
         continue-on-error: true
-        # Only Scent-Smart opts into MiniMax M3.1. Every other consumer keeps
+        # These repositories opt into MiniMax M3.1. Every other consumer keeps
         # the pre-session LongCat primary and 15-minute window.
-        timeout-minutes: ${{ github.repository == 'condensed69/Scent-Smart' && 25 || 15 }}
+        timeout-minutes: ${{ (github.repository == 'condensed69/Scent-Smart' || github.repository == 'condensed69/mom-site' || github.repository == 'condensed69/afterglow') && 25 || 15 }}
         env:
-          MODEL: ${{ github.repository == 'condensed69/Scent-Smart' && 'minimax-plan/MiniMax-M3.1-Flash-Preview' || 'opencode/longcat-2.5-preview-free' }}
-          # Scent-Smart's MiniMax trial uses this optional inherited secret.
-          # Other callers leave it unset and stay on the default Zen model.
+          MODEL: ${{ (github.repository == 'condensed69/Scent-Smart' || github.repository == 'condensed69/mom-site' || github.repository == 'condensed69/afterglow') && 'minimax-plan/MiniMax-M3.1-Flash-Preview' || 'opencode/longcat-2.5-preview-free' }}
+          # MiniMax callers provide this optional inherited secret. Other
+          # callers leave it unset and stay on the default Zen model.
           MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
           # A bare /oc makes opencode use its hardcoded "Summarize this thread"
           # prompt. Replace it with a review, but only for a bare /oc on a PR
