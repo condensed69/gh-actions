@@ -150,8 +150,8 @@ test_shared_workflow_contract() {
     return 1
   fi
   for contract in \
-    "github.repository == 'condensed69/Scent-Smart' && 25 || 15" \
-    "github.repository == 'condensed69/Scent-Smart' && 'minimax-plan/MiniMax-M3.1-Flash-Preview' || 'opencode/longcat-2.5-preview-free'" \
+    "(github.repository == 'condensed69/Scent-Smart' || github.repository == 'condensed69/mom-site' || github.repository == 'condensed69/afterglow') && 25 || 15" \
+    "(github.repository == 'condensed69/Scent-Smart' || github.repository == 'condensed69/mom-site' || github.repository == 'condensed69/afterglow') && 'minimax-plan/MiniMax-M3.1-Flash-Preview' || 'opencode/longcat-2.5-preview-free'" \
     'MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}' \
     'MiniMax-M3.1-Flash-Preview'; do
     if ! grep -qF "$contract" "$SCRIPT_DIR/$workflow"; then
