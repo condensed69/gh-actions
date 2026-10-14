@@ -11,5 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - run: bash -n add-oc-review.sh test-add-oc-review.sh
       - run: bash test-add-oc-review.sh
