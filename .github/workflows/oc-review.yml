@@ -59,7 +59,10 @@ jobs:
 
       - name: Install OpenCode
         if: steps.cache-opencode.outputs.cache-hit != 'true'
-        run: curl -fsSL https://opencode.ai/install | bash
+        run: |
+          curl -fsSL https://opencode.ai/install -o /tmp/opencode-install.sh
+          echo "fc3c1b2123f49b6df545a7622e5127d21cd794b15134fc3b66e1ca49f7fb297e  /tmp/opencode-install.sh" | sha256sum -c -
+          bash /tmp/opencode-install.sh
 
       - name: Add OpenCode to PATH
         run: echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
