@@ -194,6 +194,21 @@ test_gh_api_fetch_failure() {
   assert_log_contains_literal err "error: could not fetch stub/opencode.yml from condensed69/gh-actions"
 }
 
+test_git_clone_failure() {
+  create_mock gh '
+    if [[ "$*" == *"api repos/condensed69/gh-actions/contents/stub/opencode.yml"* ]]; then
+      echo "dummy-stub-content"
+    fi
+  '
+  create_mock git '
+    if [[ "$1" == "clone" ]]; then
+      exit 1
+    fi
+  '
+
+  assert_failure "$SCRIPT_TO_TEST" "owner/repo"
+}
+
 test_bw_returns_null() {
   create_mock gh '
     if [[ "$*" == *"api repos/condensed69/gh-actions/contents/stub/opencode.yml"* ]]; then
@@ -357,6 +372,7 @@ run_test missing_args
 run_test missing_gh
 run_test missing_git
 run_test gh_api_fetch_failure
+run_test git_clone_failure
 run_test bw_returns_null
 run_test happy_path_no_api_key
 run_test happy_path_with_env_api_key
