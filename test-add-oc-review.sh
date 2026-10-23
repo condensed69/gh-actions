@@ -338,6 +338,25 @@ test_happy_path_with_bw_api_key() {
   assert_log_contains_literal gh_stdin "test-api-key-from-bw"
 }
 
+test_branch_creation_failure() {
+  create_mock gh "
+    if [[ \"\$*\" == *\"api repos/condensed69/gh-actions/contents/stub/opencode.yml\"* ]]; then
+      echo \"dummy-stub-content\"
+    fi
+  "
+  create_mock git "
+    if [[ \"\$1\" == \"clone\" ]]; then
+      mkdir -p \"\$4\"
+    elif [[ \"\$1\" == \"checkout\" ]]; then
+      echo \"fatal: cannot create branch\" >&2
+      exit 1
+    fi
+  "
+
+  assert_failure "$SCRIPT_TO_TEST" "owner/repo"
+  assert_log_contains_literal err "fatal: cannot create branch"
+}
+
 test_bw_no_jq() {
   # To reach the jq check, bw must exist and succeed in command -v
   create_mock gh ""
@@ -362,5 +381,6 @@ run_test happy_path_no_api_key
 run_test happy_path_with_env_api_key
 run_test happy_path_with_bw_api_key
 run_test bw_no_jq
+run_test branch_creation_failure
 
 echo "All tests passed!"
