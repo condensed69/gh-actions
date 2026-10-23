@@ -65,34 +65,30 @@ assert_failure() {
   fi
 }
 
-assert_log_contains() {
+_assert_log_contains_base() {
   local file="$1"
-  local pattern="$2"
+  local match_text="$2"
+  local grep_flag="$3"
+  local match_type="$4"
+
   if [ ! -f "$LOG_DIR/$file" ]; then
     echo "Expected log '$file' does not exist."
     return 1
   fi
-  if ! grep -qE "$pattern" "$LOG_DIR/$file"; then
-    echo "Expected log '$file' to contain regex '$pattern'"
+  if ! grep "$grep_flag" "$match_text" "$LOG_DIR/$file"; then
+    echo "Expected log '$file' to contain $match_type '$match_text'"
     echo "Contents of $file:"
     cat "$LOG_DIR/$file"
     return 1
   fi
 }
 
+assert_log_contains() {
+  _assert_log_contains_base "$1" "$2" "-qE" "regex"
+}
+
 assert_log_contains_literal() {
-  local file="$1"
-  local text="$2"
-  if [ ! -f "$LOG_DIR/$file" ]; then
-    echo "Expected log '$file' does not exist."
-    return 1
-  fi
-  if ! grep -qF "$text" "$LOG_DIR/$file"; then
-    echo "Expected log '$file' to contain literal '$text'"
-    echo "Contents of $file:"
-    cat "$LOG_DIR/$file"
-    return 1
-  fi
+  _assert_log_contains_base "$1" "$2" "-qF" "literal"
 }
 
 run_test() {
