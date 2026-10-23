@@ -353,7 +353,7 @@ test_branch_creation_failure() {
     fi
   "
 
-  assert_failure "$SCRIPT_TO_TEST" "owner/repo"
+  assert_failure "$SCRIPT_TO_TEST" "owner/repo" || return 1
   assert_log_contains_literal err "fatal: cannot create branch"
 }
 
