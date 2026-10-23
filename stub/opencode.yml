@@ -31,4 +31,5 @@ jobs:
       pull-requests: write
       issues: write
     uses: condensed69/gh-actions/.github/workflows/oc-review.yml@main
-    secrets: inherit
+    secrets:
+      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
