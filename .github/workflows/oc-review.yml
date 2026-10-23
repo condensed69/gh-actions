@@ -59,7 +59,9 @@ jobs:
 
       - name: Install OpenCode
         if: steps.cache-opencode.outputs.cache-hit != 'true'
-        run: curl -fsSL https://opencode.ai/install | bash
+        run: |
+          mkdir -p ~/.opencode/bin
+          curl -sSfL "https://github.com/anomalyco/opencode/releases/download/${{ steps.opencode-version.outputs.version }}/opencode-linux-x64.tar.gz" | tar -xz -C ~/.opencode/bin opencode
 
       - name: Add OpenCode to PATH
         run: echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
