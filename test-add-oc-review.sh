@@ -202,7 +202,7 @@ test_bw_returns_null() {
   '
   create_mock git "
     if [[ \"\$1\" == \"clone\" ]]; then
-      mkdir -p \"\$4\"
+      mkdir -p \"\${@: -1}\"
     fi
   "
   create_mock bw '
@@ -237,8 +237,7 @@ test_happy_path_no_api_key() {
   "
   create_mock git "
     if [[ \"\$1\" == \"clone\" ]]; then
-      # \$1=clone, \$2=--quiet, \$3=url, \$4=path
-      mkdir -p \"\$4\"
+      mkdir -p \"\${@: -1}\"
     fi
   "
 
@@ -246,7 +245,7 @@ test_happy_path_no_api_key() {
 
   assert_log_contains_literal out "note: OPENCODE_GO_API_KEY not set"
   assert_log_contains_literal gh.log "api repos/condensed69/gh-actions/contents/stub/opencode.yml"
-  assert_log_contains_literal git.log "clone --quiet https://github.com/owner/repo.git"
+  assert_log_contains_literal git.log "clone --depth 1 --quiet https://github.com/owner/repo.git"
   assert_log_contains_literal git.log "checkout -b chore/add-oc-review"
   assert_log_contains_literal git.log "add .github/workflows/opencode.yml"
   assert_log_contains_literal git.log "commit -m ci: add /oc OpenCode review workflow"
@@ -292,8 +291,8 @@ test_happy_path_with_env_api_key() {
   "
   create_mock git "
     if [[ \"\$1\" == \"clone\" ]]; then
-      mkdir -p \"\$4\"
-      echo \"\$4\" > \"$LOG_DIR/git_clone_dir\"
+      mkdir -p \"\${@: -1}\"
+      echo \"\${@: -1}\" > \"$LOG_DIR/git_clone_dir\"
     fi
   "
 
@@ -315,7 +314,7 @@ test_happy_path_with_bw_api_key() {
   "
   create_mock git "
     if [[ \"\$1\" == \"clone\" ]]; then
-      mkdir -p \"\$4\"
+      mkdir -p \"\${@: -1}\"
     fi
   "
   create_mock bw "

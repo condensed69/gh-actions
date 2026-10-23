@@ -56,7 +56,7 @@ STUB="$(gh api "repos/$WORKFLOW_REPO/contents/$STUB_PATH" \
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-git clone --quiet "https://github.com/$REPO.git" "$TMP/repo"
+git clone --depth 1 --quiet "https://github.com/$REPO.git" "$TMP/repo"
 cd "$TMP/repo"
 
 mkdir -p .github/workflows
