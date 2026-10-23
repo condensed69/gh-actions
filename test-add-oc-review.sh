@@ -34,12 +34,15 @@ teardown() {
 create_mock() {
   local cmd="$1"
   local body="$2"
-  cat <<'EOF' > "$MOCK_BIN/$cmd"
+  # Grouping the output into a single redirect reduces file open/write/close operations
+  {
+    cat <<'EOF'
 #!/usr/bin/env bash
 EOF
-  # Appending dynamic content safely
-  echo "echo \"$cmd\" \"\$@\" >> \"$LOG_DIR/${cmd}.log\"" >> "$MOCK_BIN/$cmd"
-  echo "$body" >> "$MOCK_BIN/$cmd"
+    # Appending dynamic content safely
+    echo "echo \"$cmd\" \"\$@\" >> \"$LOG_DIR/${cmd}.log\""
+    echo "$body"
+  } > "$MOCK_BIN/$cmd"
   chmod +x "$MOCK_BIN/$cmd"
 }
 
