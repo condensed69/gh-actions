@@ -122,15 +122,22 @@ isolate_path_for_missing() {
   mkdir -p "$TEMP_BIN"
 
   # Allow fundamental tools to pass through
+  local tools_to_check=()
   for tool in bash echo cat grep mktemp rm ls mkdir printf chmod sed awk; do
     if [ "$tool" != "$tool_to_miss" ]; then
-      local tool_path
-      tool_path="$(command -v "$tool" 2>/dev/null || true)"
-      if [ -n "$tool_path" ]; then
-        ln -s "$tool_path" "$TEMP_BIN/$tool"
-      fi
+      tools_to_check+=("$tool")
     fi
   done
+
+  local all_paths
+  all_paths="$(command -v "${tools_to_check[@]}" 2>/dev/null || true)"
+
+  while IFS= read -r tool_path; do
+    if [ -n "$tool_path" ]; then
+      local tool_name="${tool_path##*/}"
+      ln -s "$tool_path" "$TEMP_BIN/$tool_name"
+    fi
+  done <<< "$all_paths"
 
   # Allow mocks to pass through
   export PATH="$MOCK_BIN:$TEMP_BIN"
