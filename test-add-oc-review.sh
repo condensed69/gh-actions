@@ -352,6 +352,26 @@ test_bw_no_jq() {
   assert_log_contains_literal err "error: 'jq' is required for the Bitwarden lookup"
 }
 
+test_pr_create_failure() {
+  create_mock gh "
+    if [[ \"\$*\" == *\"api repos/condensed69/gh-actions/contents/stub/opencode.yml\"* ]]; then
+      echo \"dummy-stub-content\"
+    fi
+    if [[ \"\$*\" == *\"pr create\"* ]]; then
+      echo \"Simulated PR creation failure\" >&2
+      exit 1
+    fi
+  "
+  create_mock git "
+    if [[ \"\$1\" == \"clone\" ]]; then
+      mkdir -p \"\$4\"
+    fi
+  "
+
+  assert_failure "$SCRIPT_TO_TEST" "owner/repo"
+  assert_log_contains_literal err "Simulated PR creation failure"
+}
+
 run_test shared_workflow_contract
 run_test missing_args
 run_test missing_gh
@@ -362,5 +382,6 @@ run_test happy_path_no_api_key
 run_test happy_path_with_env_api_key
 run_test happy_path_with_bw_api_key
 run_test bw_no_jq
+run_test pr_create_failure
 
 echo "All tests passed!"
