@@ -1,0 +1,39 @@
+name: Mira review
+
+# Mira PR review (homelab Gitea #1018). Runs on Gitea only: the job is skipped
+# on the GitHub mirror, which has no `mira` runner. pull_request_target reads
+# this file from main, so a PR cannot change how it is reviewed. Mira reads the
+# PR through the API and never checks out or runs PR code.
+# Runbook: aaron/homelab docs/runbooks/mira-review.md
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: mira-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    if: ${{ !startsWith(github.server_url, 'https://github.com') }}
+    runs-on: mira
+    timeout-minutes: 20
+    steps:
+      - name: Mira review
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          case "$PR_REPO/$PR_NUMBER" in
+            aaron/gh-actions/[1-9]*) ;;
+            *) echo "unexpected PR identity"; exit 1 ;;
+          esac
+          export MIRA_GIT_TOKEN="$(cat /secrets/gitea-token)"
+          export MIRA_FORGEJO_API_URL=https://gitea.691979.xyz/api/v1
+          export MIRA_INDEX_DIR=/mira-index
+          exec mira review --config /etc/mira/mira.yaml --trust-execution-settings \
+            --pr "https://gitea.691979.xyz/$PR_REPO/pulls/$PR_NUMBER"
