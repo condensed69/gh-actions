@@ -13,14 +13,14 @@ on:
 # on that same PR — a second /oc replaces the first; Jules does not.
 concurrency:
   group: ${{ github.workflow }}-${{ github.repository }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ !github.event.comment.user.bot && (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'COLLABORATOR') && (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode')) }}
+  cancel-in-progress: ${{ github.event.comment.user.type != 'Bot' && (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'COLLABORATOR') && (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode')) }}
 
 jobs:
   opencode:
     # Only same-repo collaborators (not bots, not forks) can trigger a review.
-    # The !bot guard stops the review's own comment from re-triggering the run.
+    # The user.type guard stops the review's own comment from re-triggering the run.
     if: |
-      !github.event.comment.user.bot &&
+      github.event.comment.user.type != 'Bot' &&
       (github.event.comment.author_association == 'OWNER' ||
        github.event.comment.author_association == 'MEMBER' ||
        github.event.comment.author_association == 'COLLABORATOR') &&
