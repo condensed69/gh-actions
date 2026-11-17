@@ -40,6 +40,9 @@ EOF
   # Appending dynamic content safely
   echo "echo \"$cmd\" \"\$@\" >> \"$LOG_DIR/${cmd}.log\"" >> "$MOCK_BIN/$cmd"
   echo "$body" >> "$MOCK_BIN/$cmd"
+  if [[ "$cmd" == git ]]; then
+    echo 'if [[ "$1" == ls-remote ]]; then exit 2; fi' >> "$MOCK_BIN/$cmd"
+  fi
   chmod +x "$MOCK_BIN/$cmd"
 }
 
@@ -161,6 +164,31 @@ test_shared_workflow_contract() {
   done
 }
 
+test_stub_contract() {
+  local stub="$SCRIPT_DIR/stub/opencode.yml"
+  local guard="github.event.comment.user.type != 'Bot' &&"
+  if [[ "$(grep -cF "$guard" "$stub")" != 2 ]] ||
+     grep -qF 'github.event.comment.user.bot' "$stub"; then
+    echo "Both concurrency and job guards must reject Bot users using user.type"
+    return 1
+  fi
+  local contract
+  for contract in \
+    '    uses: condensed69/gh-actions/.github/workflows/oc-review.yml@main' \
+    "github.event.comment.author_association == 'OWNER'" \
+    "github.event.comment.author_association == 'MEMBER'" \
+    "github.event.comment.author_association == 'COLLABORATOR'" \
+    '    permissions:' \
+    '      contents: write' \
+    '      pull-requests: write' \
+    '      issues: write'; do
+    if ! grep -qF "$contract" "$stub"; then
+      echo "Caller stub is missing reviewer contract: $contract"
+      return 1
+    fi
+  done
+}
+
 test_missing_args() {
   assert_failure "$SCRIPT_TO_TEST"
   assert_log_contains_literal err "usage: add-oc-review.sh <owner/repo>"
@@ -192,6 +220,36 @@ test_gh_api_fetch_failure() {
 
   assert_failure "$SCRIPT_TO_TEST" "owner/repo"
   assert_log_contains_literal err "error: could not fetch stub/opencode.yml from condensed69/gh-actions"
+}
+
+test_existing_remote_branch() {
+  create_mock gh 'echo "dummy-stub-content"'
+  create_mock git '
+    if [[ "$1" == clone ]]; then mkdir -p "$4"; fi
+    if [[ "$1" == ls-remote ]]; then exit 0; fi
+  '
+
+  assert_failure "$SCRIPT_TO_TEST" "owner/repo"
+  assert_log_contains_literal git.log "ls-remote --exit-code --heads origin refs/heads/chore/add-oc-review"
+  assert_log_contains_literal err "branch 'chore/add-oc-review' exists on origin"
+  assert_log_contains_literal err "delete its branch before retrying"
+  if grep -qE 'checkout|commit|push' "$LOG_DIR/git.log" ||
+     grep -qE 'secret set|pr create' "$LOG_DIR/gh.log"; then
+    echo "Existing branch must stop installation before mutations"
+    return 1
+  fi
+}
+
+test_remote_branch_suffix() {
+  create_mock gh 'echo "dummy-stub-content"'
+  create_mock git '
+    if [[ "$1" == clone ]]; then mkdir -p "$4"; fi
+    # A short pattern also matches archive/chore/add-oc-review.
+    if [[ "$1" == ls-remote && "$5" == chore/add-oc-review ]]; then exit 0; fi
+  '
+
+  assert_success "$SCRIPT_TO_TEST" "owner/repo"
+  assert_log_contains_literal gh.log "pr create -R owner/repo"
 }
 
 test_bw_returns_null() {
@@ -353,10 +411,13 @@ test_bw_no_jq() {
 }
 
 run_test shared_workflow_contract
+run_test stub_contract
 run_test missing_args
 run_test missing_gh
 run_test missing_git
 run_test gh_api_fetch_failure
+run_test existing_remote_branch
+run_test remote_branch_suffix
 run_test bw_returns_null
 run_test happy_path_no_api_key
 run_test happy_path_with_env_api_key
