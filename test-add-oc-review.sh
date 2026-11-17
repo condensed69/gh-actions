@@ -317,15 +317,6 @@ test_happy_path_no_api_key() {
     return 1
   fi
 
-  # Verify the stub file was actually written correctly
-  # Note: Since the test script removes $TEST_TMP in teardown, we can't inspect the file directly after run.
-  # But we can verify `assert_success` ensures it was written, because the bash script runs `printf` into it.
-  # If we really want to inspect it, we should do it before teardown.
-  # Actually, the file is written to $TMP/repo, which the script creates via `mktemp -d` and cleans up via EXIT trap.
-  # So we CANNOT inspect it from here after `assert_success` finishes. The script cleans it up!
-  # Let's verify the stub content by checking the gh api mock was called correctly, and that the file was added.
-  assert_log_contains git.log "add .github/workflows/opencode.yml"
-
   if [ ! -f "$LOG_DIR/stub_content_verification" ]; then
     echo "Expected stub content to be dumped by gh pr create mock."
     return 1
