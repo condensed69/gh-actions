@@ -15,3 +15,4 @@ jobs:
           persist-credentials: false
       - run: bash -n add-oc-review.sh test-add-oc-review.sh
       - run: bash test-add-oc-review.sh
+      - run: python3 test-oc-review.py

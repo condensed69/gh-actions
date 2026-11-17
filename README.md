@@ -14,10 +14,10 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
   Both are Zen **free** (no OpenCode Go quota, no
   API key). Single source of truth — updates here propagate to every consumer on `@main`.
   A bare `/oc` (ignoring whitespace, case and a trailing Claude Code footer) is a review-only run:
-  untracked files are ignored for that run, so scratch files the model leaves
-  behind can't be pushed to the PR, and the prompt tells it not to edit or
-  commit anything. A tracked-file edit or a commit the model makes itself is
-  held back only by that prompt.
+  its job token has `contents: read`, so neither Git pushes (including explicit
+  URLs and fork remotes) nor contents API writes can change repository code.
+  It retains permission to post review comments. Untracked scratch files are
+  ignored, the origin push URL is disabled, and the prompt discourages edits.
   `/oc <instruction>` can still commit changes it was asked to make.
 - **`stub/opencode.yml`** — the per-repo caller stub (triggers + guards + `secrets: inherit`).
 
