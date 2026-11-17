@@ -39,6 +39,12 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
+    env:
+      # A bare /oc makes opencode use its hardcoded "Summarize this thread"
+      # prompt. Replace it with a review, but only for a bare /oc on a PR
+      # conversation (needs.mode). "/oc <text>" and inline code-line
+      # comments are unchanged.
+      REVIEW_PROMPT: Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit, delete or commit any files in the repository; put any scratch scripts or notes under /tmp.
     steps: &opencode-steps
       # v4 still declares Node 20 and prints a deprecation notice on
       # every run now that Actions runners default to Node 24
@@ -114,11 +120,7 @@ jobs:
           # MiniMax callers provide this optional inherited secret. Other
           # callers leave it unset and stay on the default Zen model.
           MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
-          # A bare /oc makes opencode use its hardcoded "Summarize this thread"
-          # prompt. Replace it with a review, but only for a bare /oc on a PR
-          # conversation (needs.mode). "/oc <text>" and inline code-line
-          # comments are unchanged.
-          PROMPT: ${{ needs.mode.outputs.review == 'true' && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit, delete or commit any files in the repository; put any scratch scripts or notes under /tmp.' || '' }}
+          PROMPT: ${{ needs.mode.outputs.review == 'true' && env.REVIEW_PROMPT || '' }}
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
           # The review PROMPT sends scratch files to /tmp, which is outside the
@@ -154,11 +156,7 @@ jobs:
           # a full review with no OpenCode Go quota. Do not use opencode-go/*
           # while Go tokens are exhausted.
           MODEL: opencode/big-pickle
-          # A bare /oc makes opencode use its hardcoded "Summarize this thread"
-          # prompt. Replace it with a review, but only for a bare /oc on a PR
-          # conversation (needs.mode). "/oc <text>" and inline code-line
-          # comments are unchanged.
-          PROMPT: ${{ needs.mode.outputs.review == 'true' && 'Review this pull request. Look for bugs, security problems, and anything that should change before merging. Cite file and line for each finding. This is a review only, so do not create, edit, delete or commit any files in the repository; put any scratch scripts or notes under /tmp.' || '' }}
+          PROMPT: ${{ needs.mode.outputs.review == 'true' && env.REVIEW_PROMPT || '' }}
           USE_GITHUB_TOKEN: "true"
           SHARE: "false"
           # Same /tmp allowance as the primary step; see the note there.
