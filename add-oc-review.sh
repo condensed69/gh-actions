@@ -59,7 +59,7 @@ trap 'rm -rf "$TMP"' EXIT
 git clone --quiet "https://github.com/$REPO.git" "$TMP/repo"
 cd "$TMP/repo"
 
-if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; then
+if git ls-remote --exit-code --heads origin "refs/heads/$BRANCH" >/dev/null; then
   echo "error: branch '$BRANCH' exists on origin; close or delete the old PR and delete its branch before retrying" >&2
   exit 1
 fi
