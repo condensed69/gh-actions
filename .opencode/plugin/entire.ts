@@ -168,6 +168,7 @@ const EntirePlugin: Plugin = async ({ directory }) => {
    */
   function callHookSync(hookName: string, payload: Record<string, unknown>) {
     try {
+      if (!/^[a-zA-Z0-9_\-\.\/\\]+$/.test(hookName)) throw new Error('Invalid input')
       const json = JSON.stringify(payload)
       const [cmd, ...args] = hookCmd(hookName)
       spawnSync(cmd, args, {
