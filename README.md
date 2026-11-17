@@ -21,10 +21,11 @@ Posts an AI code review to a PR when a collaborator comments `/oc` (or
   `/oc <instruction>` can still commit changes it was asked to make.
 - **`stub/opencode.yml`** — the per-repo caller stub (triggers + guards + `secrets: inherit`).
 
-Scent-Smart alone is selected by `github.repository` for a MiniMax M3.1 Flash
-Preview trial with a 25-minute window. Every other consumer keeps the default
-LongCat primary. The trial requires a `MINIMAX_API_KEY` Actions secret in
-Scent-Smart; the shared workflow declares the `minimax-plan` provider inline
+Scent-Smart, mom-site, and afterglow under `condensed69` are selected by
+`github.repository` for a MiniMax M3.1 Flash Preview trial with a 25-minute
+window. Every other consumer keeps the default LongCat primary. The trial
+requires a `MINIMAX_API_KEY` Actions secret in each selected repository; the
+shared workflow declares the `minimax-plan` provider inline
 because CI has no user OpenCode configuration. A failed primary still falls
 back to `opencode/big-pickle`.
 
