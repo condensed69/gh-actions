@@ -161,7 +161,7 @@ test_shared_workflow_contract() {
   done
 }
 
-test_stub_bot_guard() {
+test_stub_contract() {
   local stub="$SCRIPT_DIR/stub/opencode.yml"
   local guard="github.event.comment.user.type != 'Bot' &&"
   if [[ "$(grep -cF "$guard" "$stub")" != 2 ]] ||
@@ -169,6 +169,21 @@ test_stub_bot_guard() {
     echo "Both concurrency and job guards must reject Bot users using user.type"
     return 1
   fi
+  local contract
+  for contract in \
+    '    uses: condensed69/gh-actions/.github/workflows/oc-review.yml@main' \
+    "github.event.comment.author_association == 'OWNER'" \
+    "github.event.comment.author_association == 'MEMBER'" \
+    "github.event.comment.author_association == 'COLLABORATOR'" \
+    '    permissions:' \
+    '      contents: write' \
+    '      pull-requests: write' \
+    '      issues: write'; do
+    if ! grep -qF "$contract" "$stub"; then
+      echo "Caller stub is missing reviewer contract: $contract"
+      return 1
+    fi
+  done
 }
 
 test_missing_args() {
@@ -363,7 +378,7 @@ test_bw_no_jq() {
 }
 
 run_test shared_workflow_contract
-run_test stub_bot_guard
+run_test stub_contract
 run_test missing_args
 run_test missing_gh
 run_test missing_git
