@@ -13,6 +13,11 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - run: bash -n add-oc-review.sh test-add-oc-review.sh
+      - run: |
+          status=0
+          for script in add-oc-review.sh test-add-oc-review.sh; do
+            bash -n "$script" || status=1
+          done
+          exit "$status"
       - run: bash test-add-oc-review.sh
       - run: python3 test-oc-review.py
